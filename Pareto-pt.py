@@ -3,6 +3,8 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import openpyxl
+import os
 from io import BytesIO  # Importar BytesIO
 from matplotlib.backends.backend_pdf import PdfPages
 from datetime import datetime
@@ -80,9 +82,8 @@ if st.session_state.page == "Inicio":
                 - Primeira coluna: colocar as categorias (Falhas, demoras, ameaças, oportunidades, causas). Não existe
                     um limite de caracteres para esta categoria, mas um máximo de 25 caracteres mantém uma aparência legível.
                 - Segunda coluna: colocar a frequência (tempo acumulado para cada evento).
-                - O título do gráfico será o nome do arquivo sem extensão.*
-                - O nome da aba aparecerá como referência no rodapé do gráfico.*
-                - *Em construção
+                - O título do gráfico será o nome do arquivo sem extensão.
+                - Os encabeçados das columnas serán utilizados como etiquetas dos eixos X (celula B1), Y (celula A1).
                 3. Não deve haver células em branco ou valores nulos.
                 4. O aplicativo se encarregará de ordenar a severidade dos eventos de acordo com a frequência em ordem decrescente.
                 5. Um pequeno diferencial nesta proposta de interpretação de Pareto é a área
@@ -113,9 +114,21 @@ elif st.session_state.page == "Aplicação":
     if st.button('Gerar exemplo'):
         df_data = generar_ejemplo()
         st.write("Exemplo Gerado com sucesso:")
-        #st.dataframe(df_data)
+        # Iniciar variaveis
+        title_gp4 = 'Gráfico de Pareto 4.0'
+        xlabel_causas = 'Causas'
+        ylabel_frecuencia = 'Frequência'
     
     if uploaded_file is not None:
+        # actulización de las variables para rotular el grafico
+        wb = openpyxl.load_workbook(uploaded_file)
+        ws = wb.active
+        title_gp4 = os.path.splitext(uploaded_file.name)[0]
+
+        # Obtener los valores de las celdas A1 y B1
+        xlabel_causas = ws['A1'].value
+        ylabel_frecuencia = ws['B1'].value
+
         # Se tem cargado o arquivo, leemos os dados num DataFrame
         df_data = pd.read_excel(uploaded_file)
         df_data.rename(columns={df_data.columns[0]: 'Causa', df_data.columns[1]: 'Frecuencia'}, inplace=True)
@@ -141,10 +154,10 @@ elif st.session_state.page == "Aplicação":
                 
                 # Criar o gráfico de Pareto
                 fig, ax = plt.subplots(figsize=(10, 6))
-                plt.title('gráfico de Pareto 4.0', fontsize=14, pad=10)
+                plt.title(title_gp4, fontsize=14, pad=10)
                 ax.bar(df_data['Causa'], df_data['Frecuencia'], color='blue')
-                ax.set_xlabel("Causas")
-                ax.set_ylabel("Frequência")
+                ax.set_xlabel(xlabel_causas)
+                ax.set_ylabel(ylabel_frecuencia)
                 ax.set_xticklabels(df_data['Causa'], rotation=90, fontsize=8)
                 ax2 = ax.twinx()
                 ax2.plot(df_data['Causa'], df_data['Porcentaje Acumulado'], color='red', linestyle='-')
@@ -155,7 +168,7 @@ elif st.session_state.page == "Aplicação":
                 plt.xlim(-1, len(df_data))
                 plt.ylim(0, 105)
                          
-                st.write("### gráfico de Pareto 4.0")
+                st.write("### Gráfico de Pareto 4.0")
                 st.write("Eventos na área sombreada são responsaveis pelo 80% das paradas, Pay Attention!")
                 st.pyplot(fig)
 
